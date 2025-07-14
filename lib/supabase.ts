@@ -123,7 +123,6 @@ export interface Database {
           status: 'Open' | 'Ready' | 'Assigned' | 'Shipped' | 'Closed' | 'Cancelled'
           trailer_no: string | null
           driver_name: string | null
-          eta: string | null
           created_at: string
           updated_at: string
         }
@@ -134,7 +133,6 @@ export interface Database {
           status?: 'Open' | 'Ready' | 'Assigned' | 'Shipped' | 'Closed' | 'Cancelled'
           trailer_no?: string | null
           driver_name?: string | null
-          eta?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -145,7 +143,6 @@ export interface Database {
           status?: 'Open' | 'Ready' | 'Assigned' | 'Shipped' | 'Closed' | 'Cancelled'
           trailer_no?: string | null
           driver_name?: string | null
-          eta?: string | null
           created_at?: string
           updated_at?: string
         }

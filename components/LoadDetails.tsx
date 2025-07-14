@@ -235,18 +235,19 @@ export default function LoadDetails({ loadId, userProfile, onUpdate, themeColor 
     
     pdf.setFontSize(12)
     pdf.text(`Load ID: ${loadId}`, 20, 35)
-    pdf.text(`Trailer: ${trailerNumber}`, 20, 45)
+    pdf.text(`Trailer: ${trailerNumber || 'TBD'}`, 20, 45)
     pdf.text(`Date: ${new Date().toLocaleDateString()}`, 20, 55)
     
     // Line items table
     pdf.setFontSize(10)
     let yPosition = 75
     
-    // Table headers
+    // Table headers - Updated to include Heat Number
     pdf.text('Line', 20, yPosition)
     pdf.text('Description', 40, yPosition)
-    pdf.text('Qty Ordered', 120, yPosition)
-    pdf.text('Status', 160, yPosition)
+    pdf.text('Heat #', 120, yPosition)
+    pdf.text('Qty Ordered', 150, yPosition)
+    pdf.text('Status', 180, yPosition)
     
     yPosition += 10
     
@@ -255,12 +256,21 @@ export default function LoadDetails({ loadId, userProfile, onUpdate, themeColor 
       if (yPosition > 250) {
         pdf.addPage()
         yPosition = 20
+        // Re-add headers on new page
+        pdf.setFontSize(10)
+        pdf.text('Line', 20, yPosition)
+        pdf.text('Description', 40, yPosition)
+        pdf.text('Heat #', 120, yPosition)
+        pdf.text('Qty Ordered', 150, yPosition)
+        pdf.text('Status', 180, yPosition)
+        yPosition += 10
       }
       
       pdf.text(String(detail.line), 20, yPosition)
       pdf.text(detail.item_desc?.substring(0, 30) || '', 40, yPosition)
-      pdf.text(String(detail.qty_ordered || ''), 120, yPosition)
-      pdf.text(detail.status_code, 160, yPosition)
+      pdf.text(detail.heat_number || '', 120, yPosition)
+      pdf.text(String(detail.qty_ordered || ''), 150, yPosition)
+      pdf.text(detail.status_code, 180, yPosition)
       
       if (detail.markoff_reason) {
         yPosition += 7
@@ -366,22 +376,26 @@ export default function LoadDetails({ loadId, userProfile, onUpdate, themeColor 
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       
       {/* Load Summary */}
-      <div className="bg-gray-50 rounded-lg p-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div>
+      <div className="bg-gray-50 rounded-lg p-3 md:p-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3 md:gap-4">
+          <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700">Load ID</label>
             <div className="text-lg font-semibold">{loadId}</div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Ship From</label>
-            <div>{load?.ship_from_loc}</div>
+            <div className="text-sm md:text-base">{load?.ship_from_loc}</div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Requested</label>
+            <div className="text-sm md:text-base">{load?.ship_req_date ? new Date(load.ship_req_date).toLocaleDateString() : 'N/A'}</div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Status</label>
-            <div className={`inline-px-2 py-1 rounded text-sm ${
+            <div className={`inline-flex items-center px-2 py-1 rounded text-sm ${
               load?.status === 'Open' ? 'bg-yellow-100 text-yellow-800' :
               load?.status === 'Ready' ? 'bg-blue-100 text-blue-800' :
               load?.status === 'Assigned' ? 'bg-green-100 text-green-800' :
@@ -392,13 +406,13 @@ export default function LoadDetails({ loadId, userProfile, onUpdate, themeColor 
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Carrier</label>
-            <div>{load?.carrier_code || 'TBD'}</div>
+            <div className="text-sm md:text-base">{load?.carrier_code || 'TBD'}</div>
           </div>
         </div>
       </div>
 
       {/* Trailer Number */}
-      <div className="bg-white border rounded-lg p-4">
+      <div className="bg-white border rounded-lg p-3 md:p-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Trailer Number *
         </label>
@@ -408,13 +422,93 @@ export default function LoadDetails({ loadId, userProfile, onUpdate, themeColor 
           onChange={(e) => setTrailerNumber(e.target.value)}
           disabled={isConfirmed}
           placeholder="Enter trailer number"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+          className="mobile-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
         />
         <p className="mt-1 text-xs text-gray-500">Must be numeric</p>
       </div>
 
-      {/* Line Items */}
-      <div className="bg-white border rounded-lg overflow-hidden">
+      {/* Line Items - Mobile Cards */}
+      <div className="md:hidden bg-white border rounded-lg overflow-hidden">
+        <div className="px-3 py-3 bg-gray-50 border-b">
+          <h4 className="text-base font-medium">Line Items ({loadDetails.length})</h4>
+        </div>
+        
+        <div className="space-y-3 p-3">
+          {loadDetails.map((detail) => (
+            <div key={detail.id} className="border rounded-lg p-3 bg-gray-50">
+              <div className="flex justify-between items-start mb-2">
+                <div className="font-medium text-sm">Line {detail.line}</div>
+                <div className={`px-2 py-1 rounded text-xs ${
+                  detail.status_code === 'Open' ? 'bg-yellow-100 text-yellow-800' :
+                  detail.status_code === 'Loaded' ? 'bg-green-100 text-green-800' :
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {detail.status_code.replace('_', ' ')}
+                </div>
+              </div>
+              
+              <div className="text-sm text-gray-900 mb-2">{detail.item_desc}</div>
+              
+              <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                <div>
+                  <span className="font-medium">Heat #:</span> {detail.heat_number || 'N/A'}
+                </div>
+                <div>
+                  <span className="font-medium">Qty:</span> {detail.qty_ordered || 'N/A'}
+                </div>
+              </div>
+              
+              {detail.markoff_reason && (
+                <div className="mt-2 text-xs text-red-600">
+                  <span className="font-medium">Reason:</span> {detail.markoff_reason}
+                </div>
+              )}
+              
+              {/* Mobile buttons available to all users (same as desktop dropdown) */}
+              <div className="mt-3 space-y-2">
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => updateLineItem(detail.id, 'status_code', 'Open')}
+                    disabled={isConfirmed}
+                    className="flex-1 mobile-button px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Open
+                  </button>
+                  <button
+                    onClick={() => updateLineItem(detail.id, 'status_code', 'Loaded')}
+                    disabled={isConfirmed}
+                    className="flex-1 mobile-button px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Loaded
+                  </button>
+                  <button
+                    onClick={() => updateLineItem(detail.id, 'status_code', 'Marked_Off')}
+                    disabled={isConfirmed}
+                    className="flex-1 mobile-button px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Mark Off
+                  </button>
+                </div>
+                
+                {/* Reason input for marked off items */}
+                {detail.status_code === 'Marked_Off' && (
+                  <input
+                    type="text"
+                    value={detail.markoff_reason || ''}
+                    onChange={(e) => updateLineItem(detail.id, 'markoff_reason', e.target.value)}
+                    disabled={isConfirmed}
+                    placeholder="Enter reason for marking off"
+                    className="mobile-form-select text-xs focus:outline-none focus:ring-2 focus:ring-red-500 disabled:bg-gray-100"
+                  />
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Line Items - Desktop Table */}
+      <div className="hidden md:block bg-white border rounded-lg overflow-hidden">
         <div className="px-4 py-3 bg-gray-50 border-b">
           <h4 className="text-lg font-medium">Line Items ({loadDetails.length})</h4>
         </div>
@@ -425,6 +519,7 @@ export default function LoadDetails({ loadId, userProfile, onUpdate, themeColor 
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Line</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Heat #</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qty Ordered</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reason</th>
@@ -438,6 +533,9 @@ export default function LoadDetails({ loadId, userProfile, onUpdate, themeColor 
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-900">
                     {detail.item_desc}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-900">
+                    {detail.heat_number}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-900">
                     {detail.qty_ordered}
@@ -486,34 +584,25 @@ export default function LoadDetails({ loadId, userProfile, onUpdate, themeColor 
           📋 View History
         </button>
 
+        {/* Print Loading Docs Button - Available even before confirmation */}
+        {loadDetails.length > 0 && (
+          <button
+            onClick={generateLoadingDocsPDF}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            📄 Print Loading Docs
+          </button>
+        )}
+
+        {/* Confirm Load Button - Only shown when not confirmed */}
         {!isConfirmed && (
           <button
             onClick={confirmLoad}
             disabled={saving}
             className={`px-4 py-2 bg-${themeColor}-600 text-white rounded-md hover:bg-${themeColor}-700 focus:outline-none focus:ring-2 focus:ring-${themeColor}-500 disabled:opacity-50`}
           >
-            {saving ? 'Confirming...' : 'Load Confirmed'}
+            {saving ? 'Confirming...' : 'Confirm Load'}
           </button>
-        )}
-        
-        {isConfirmed && (
-          <>
-            <button
-              onClick={generateLoadingDocsPDF}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              Print Loading Docs
-            </button>
-            
-            {stopDetails.length > 0 && (
-              <button
-                onClick={generateBOL}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-              >
-                Print BOL
-              </button>
-            )}
-          </>
         )}
       </div>
 
@@ -551,7 +640,7 @@ export default function LoadDetails({ loadId, userProfile, onUpdate, themeColor 
                       {stop.miles}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900">
-                      {stop.weight} lbs
+                      {stop.weight}
                     </td>
                   </tr>
                 ))}
@@ -571,6 +660,16 @@ export default function LoadDetails({ loadId, userProfile, onUpdate, themeColor 
           </div>
         </div>
       )}
+
+      {/* Print BOL Button - Always visible, positioned after stop details */}
+      <div className="flex justify-center">
+        <button
+          onClick={generateBOL}
+          className="px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 font-medium shadow-md"
+        >
+          📊 Print Bill of Lading
+        </button>
+      </div>
 
       {/* Audit History Modal */}
       <AuditHistory

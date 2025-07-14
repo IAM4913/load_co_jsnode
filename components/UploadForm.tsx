@@ -139,8 +139,8 @@ export default function UploadForm({ onUploadComplete, themeColor }: UploadFormP
           status: row.STATUS || 'Open',
           trailer_no: row.TRAILER_NO || null,
           driver_name: row.DRIVER_NAME || null,
-          eta: row.ETA ? new Date(row.ETA).toISOString() : null
-        }))
+          ship_req_date: row.SHIP_REQ_DATE || new Date().toISOString()
+                  }))
 
         const { error } = await supabase
           .from('loads')
