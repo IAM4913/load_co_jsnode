@@ -7,6 +7,7 @@ import { Auth } from '@supabase/auth-ui-react'
 import { ThemeSupa } from '@supabase/auth-ui-shared'
 import LoadGrid from '@/components/LoadGrid'
 import UploadForm from '@/components/UploadForm'
+import ExcelFileWatcher from '@/components/ExcelFileWatcher'
 import LoadDetails from '@/components/LoadDetails'
 
 interface UserProfile {
@@ -35,7 +36,7 @@ export default function LoadCoordinator() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [loads, setLoads] = useState<Load[]>([])
   const [selectedLoad, setSelectedLoad] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'grid' | 'upload' | 'details'>('grid')
+  const [activeTab, setActiveTab] = useState<'grid' | 'upload' | 'excel' | 'details'>('grid')
   const supabase = createClient()
 
   // Authentication effect
@@ -397,17 +398,30 @@ const updateLoad = async (loadId: string, updates: Partial<Load>) => {
               <span className="block text-xs font-normal">({loads.length})</span>
             </button>
             {userProfile.role === 'ADMIN' && (
-              <button
-                onClick={() => setActiveTab('upload')}
-                className={`mobile-tab ${
-                  activeTab === 'upload'
-                    ? `border-${themeColor}-500 text-${themeColor}-600`
-                    : 'border-transparent text-gray-500'
-                }`}
-              >
-                <span className="block text-xs">Upload</span>
-                <span className="block text-xs font-normal">CSV</span>
-              </button>
+              <>
+                <button
+                  onClick={() => setActiveTab('upload')}
+                  className={`mobile-tab ${
+                    activeTab === 'upload'
+                      ? `border-${themeColor}-500 text-${themeColor}-600`
+                      : 'border-transparent text-gray-500'
+                  }`}
+                >
+                  <span className="block text-xs">Upload</span>
+                  <span className="block text-xs font-normal">CSV</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('excel')}
+                  className={`mobile-tab ${
+                    activeTab === 'excel'
+                      ? `border-${themeColor}-500 text-${themeColor}-600`
+                      : 'border-transparent text-gray-500'
+                  }`}
+                >
+                  <span className="block text-xs">Excel</span>
+                  <span className="block text-xs font-normal">Sync</span>
+                </button>
+              </>
             )}
             {selectedLoad && (
               <button
@@ -441,16 +455,28 @@ const updateLoad = async (loadId: string, updates: Partial<Load>) => {
               Load Grid
             </button>
             {userProfile.role === 'ADMIN' && (
-              <button
-                onClick={() => setActiveTab('upload')}
-                className={`py-4 px-2 border-b-2 font-medium text-sm ${
-                  activeTab === 'upload'
-                    ? `border-${themeColor}-500 text-${themeColor}-600`
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Upload CSV
-              </button>
+              <>
+                <button
+                  onClick={() => setActiveTab('upload')}
+                  className={`py-4 px-2 border-b-2 font-medium text-sm ${
+                    activeTab === 'upload'
+                      ? `border-${themeColor}-500 text-${themeColor}-600`
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Upload CSV
+                </button>
+                <button
+                  onClick={() => setActiveTab('excel')}
+                  className={`py-4 px-2 border-b-2 font-medium text-sm ${
+                    activeTab === 'excel'
+                      ? `border-${themeColor}-500 text-${themeColor}-600`
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Excel Sync
+                </button>
+              </>
             )}
             {selectedLoad && (
               <button
@@ -502,6 +528,21 @@ const updateLoad = async (loadId: string, updates: Partial<Load>) => {
                 </h3>
                 <UploadForm
                   onUploadComplete={loadData}
+                  themeColor={themeColor}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Excel File Watcher Tab */}
+          {activeTab === 'excel' && userProfile.role === 'ADMIN' && (
+            <div className="bg-white shadow rounded-lg">
+              <div className="px-3 py-4 md:px-4 md:py-5 sm:p-6">
+                <h3 className="text-base md:text-lg leading-6 font-medium text-gray-900 mb-4">
+                  Excel File Watcher
+                </h3>
+                <ExcelFileWatcher
+                  onSyncComplete={loadData}
                   themeColor={themeColor}
                 />
               </div>
